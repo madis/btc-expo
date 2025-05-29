@@ -1,0 +1,15 @@
+;; shadow-cljs configuration
+{:deps true
+
+ :builds
+ {:storybook
+  {:target :esm-files
+   :output-dir "sb/stories/cljs"}
+
+  :ui
+  {:target :browser
+   :output-dir "public/js"
+   :asset-path "/js"
+   :modules {:main {:init-fn jutuke.core/init}}
+   :devtools {:http-root "public"
+              :http-port 3000}}}}
