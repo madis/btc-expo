@@ -1,5 +1,11 @@
 ;; shadow-cljs configuration
 {:deps true
+ :nrepl
+ {:port 3333}
+
+
+ :dev-http
+ {8000 ["out/browser_tests"]}
 
  :builds
  {:storybook
@@ -12,4 +18,14 @@
    :asset-path "/js"
    :modules {:main {:init-fn jutuke.core/init}}
    :devtools {:http-root "public"
-              :http-port 3000}}}}
+              :http-port 3000
+              :after-load jutuke.core/clear-cache-and-render!
+              :preloads [devtools.preload]}}
+
+  :unit-tests
+  {:target :node-test
+   :output-to "out/unit_tests.js"}
+
+  :browser-tests
+  {:target :browser-test
+   :test-dir "out/browser_tests"}}}
