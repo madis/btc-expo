@@ -24,3 +24,4 @@ pom.xml.asc
 .lsp
 Session.vim
 out
+.env

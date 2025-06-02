@@ -1,4 +1,4 @@
-(ns jutuke.pages
+(ns app.pages
   (:require
     [components.button :as button]))
 

@@ -1,6 +1,8 @@
-{:paths ["src/app" "src/sb" "test"]
+{:paths ["src" "test"]
 
  :deps
  {thheller/shadow-cljs {:mvn/version "3.1.4"}
   reagent/reagent {:mvn/version "1.3.0"}
+  lambdaisland/fetch {:mvn/version "1.5.83"}
+  com.lambdaisland/glogi {:mvn/version "1.3.169"}
   binaryage/devtools {:mvn/version "1.0.7"}}}
