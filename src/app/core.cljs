@@ -1,9 +1,9 @@
 (ns app.core
   (:require
-    [reagent.dom.client :as rdc]
     [lambdaisland.glogi :as log]
     [lambdaisland.glogi.console :as glogi-console]
-    [app.pages :as pages]))
+    [mount.core :as mount]
+    [app.ui]))
 
 (glogi-console/install!)
 
@@ -11,12 +11,16 @@
   {:glogi/root :info
    'app.lightning :trace})
 
-(defonce root-container
-  (rdc/create-root (js/document.getElementById "app")))
+(defn start!
+  []
+  (log/info :starting "Starting the application")
+  (mount/start))
+
+(defn stop!
+  []
+  (log/info :stopping "Stopping the application")
+  (mount/stop))
 
 (defn ^:export init []
-  (rdc/render root-container [pages/page]))
-
-(defn clear-cache-and-render!
-  []
-  (init))
+  (log/info :init "init called")
+  (start!))

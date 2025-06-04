@@ -19,7 +19,8 @@
    :modules {:main {:init-fn app.core/init}}
    :devtools {:http-root "public"
               :http-port 3000
-              :after-load app.core/clear-cache-and-render!
+              :before-load app.core/stop!
+              :after-load app.core/start!
               :preloads [devtools.preload]}}
 
   :unit-tests
