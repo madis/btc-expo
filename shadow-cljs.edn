@@ -18,10 +18,17 @@
    :asset-path "/js"
    :modules {:main {:init-fn app.core/init}}
    :devtools {:http-root "public"
-              :http-port 3000
+              :http-port 8008
               :before-load app.core/stop!
               :after-load app.core/start!
               :preloads [devtools.preload]}}
+
+  :server
+  {:target :node-script
+   :output-to "out/server.js"
+   :main server.core/main
+   :devtools
+   {:watch-dir "public"}}
 
   :unit-tests
   {:target :node-test
