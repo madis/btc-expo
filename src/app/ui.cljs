@@ -21,7 +21,7 @@
   :stop (stop))
 
 (rf/reg-event-db ::initialize-db
-  (fn [db [_ initial-db-state]]
+  (fn [_db [_ initial-db-state]]
     (merge {:current-route nil
             :router nil}
              initial-db-state)))

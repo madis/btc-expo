@@ -1,11 +1,11 @@
 (ns server.core
-  (:require [oops.core :refer [oget oset! ocall]]
+  (:require [oops.core :refer [oget]]
             ["express" :as express]
             ["path" :as path]
             ["node:crypto" :as crypto]
             ["lnurl" :as lnurl]
             ["morgan" :as morgan]
-            [lambdaisland.uri :as li-uri :refer [uri]]))
+            [lambdaisland.uri :as li-uri]))
 
 ;; Initialize Express app
 ;; Docs: https://expressjs.com/en/5x/api.html
@@ -34,7 +34,7 @@
 
 ;; API Endpoints
 (.get app "/api/data"
-      (fn [req res]
+      (fn [_req res]
         (.json res (clj->js {:message "Hello from GET endpoint!"
                              :timestamp (.getTime (js/Date.))}))))
 (.post app "/api/data"
@@ -94,6 +94,10 @@
               {:keys [sig k1 key]} query-params]
           (.json res (clj->js (handle-login sig k1 key))))))
 
+(.get app "/api/config"
+      (fn [_req res]
+        (let [config {:api-base-url "http://example.com"}]
+          (.json res (clj->js config)))))
 ;; Start the server
 (defn main []
   (.listen app 3000

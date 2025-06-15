@@ -1,7 +1,6 @@
 (ns app.lightning
   (:require
     [lambdaisland.fetch :as fetch]
-    [lambdaisland.glogi :as log]
     [cljs.core.async :as async]))
 
 (defonce client (atom {}))
@@ -26,13 +25,9 @@
    :getinfo {:method :post}
    :listfunds {:method :post}})
 
-(defn call [method & args]
+(defn call [method & _args]
   (p->ch (fetch/request
            (get-endpoint-url method)
            {:method (get-in api-methods [method :method])
             :as :json
             :headers {"Rune" (:rune @client)}})))
-
-(defn get-balance
-  []
-  (call :getinfo))
