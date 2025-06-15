@@ -4,7 +4,8 @@
             ["path" :as path]
             ["node:crypto" :as crypto]
             ["lnurl" :as lnurl]
-            ["morgan" :as morgan]))
+            ["morgan" :as morgan]
+            [lambdaisland.uri :as li-uri :refer [uri]]))
 
 ;; Initialize Express app
 ;; Docs: https://expressjs.com/en/5x/api.html
@@ -18,6 +19,9 @@
     (.header ^js res "Access-Control-Allow-Headers" "Access-Control-Allow-Origin")
     (.header ^js res "Access-Control-Allow-Origin" "*")
     (next))
+
+(def config
+  {:base-url "https://apps.mad.is/api/login"})
 
 (.use app cors-middleware)
 ;; Middleware to parse JSON bodies
@@ -49,10 +53,17 @@
   [sig k1 key]
   (lnurl/verifyAuthorizationSignature sig k1 key))
 
-(defn generate-lnurl
+(defn generate-random-hex-id
   []
-  (let [base-url "https://apps.mad.is/api/login"]
-    (str base-url "?tag=login&k1=" (.toString (crypto/randomBytes 32) "hex"))))
+  (.toString (crypto/randomBytes 32) "hex"))
+
+(defn generate-lnurl
+  [query-params]
+  (let [base-url (config :base-url)]
+    (-> base-url
+        (li-uri/parse ,,,)
+        (li-uri/assoc-query ,,, query-params)
+        (li-uri/uri-str ,,,))))
 
 (defn handle-login
   [sig k1 key]
@@ -60,21 +71,28 @@
     {:status "OK"}
     {:status "ERROR" :reason "Login unsuccessful due to failure in verifying signature"}))
 
-(def login-req (atom nil))
+(def storage (atom {}))
 
 (.get app "/api/lnurl"
       (fn [_req res]
-        (let [url (generate-lnurl)]
+        (let [hex-id (generate-random-hex-id)
+              url-params {:k1 hex-id :tag "login"}
+              url (generate-lnurl url-params)]
           (js/console.log "Requested /api/lnurl")
           (.json res (clj->js {:lnurl (lnurl/encode url)
                                :url url})))))
 
 (.get app "/api/login"
-       (fn [req res]
-         (let [query-params (js-obj->clj-map (oget req :query))
-               {:keys [sig k1 key]} query-params]
-           (reset! login-req req)
-           (.json res (clj->js (handle-login sig k1 key))))))
+      (fn [req res]
+        (let [query-params (js-obj->clj-map (oget req :query))
+              {:keys [sig k1 key]} query-params]
+          (.json res (clj->js (handle-login sig k1 key))))))
+
+(.get app "/api/login-status"
+      (fn [req res]
+        (let [query-params (js-obj->clj-map (oget req :query))
+              {:keys [sig k1 key]} query-params]
+          (.json res (clj->js (handle-login sig k1 key))))))
 
 ;; Start the server
 (defn main []
