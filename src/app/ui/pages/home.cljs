@@ -2,5 +2,4 @@
 
 (defn show
   []
-  [:h1 "Welcome!"])
-
+  [:h1 "Hello!"])

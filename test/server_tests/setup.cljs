@@ -1,4 +1,4 @@
-(ns jutuke-tests.setup
+(ns server-tests.setup
   (:require
     [lambdaisland.glogi.console :as glogi-console]
     [lambdaisland.glogi :as log]))

@@ -5,4 +5,4 @@ storybook_cljs: sleep 10 && npx shadow-cljs watch storybook
 ui: sleep 10 && npx shadow-cljs watch ui
 server: sleep 10 && npx shadow-cljs watch server
 browser_tests: sleep 10 && npx shadow-cljs watch browser-tests # To run: open http://localhost:8000
-unit_tests: sleep 10 && npx shadow-cljs watch unit-tests # To run: node out/unit_tests.js
+server_tests: sleep 10 && npx shadow-cljs watch server-tests # To run: node out/server_tests.js

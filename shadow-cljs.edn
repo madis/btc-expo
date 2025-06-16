@@ -30,10 +30,12 @@
    :devtools
    {:watch-dir "public"}}
 
-  :unit-tests
+  :server-tests
   {:target :node-test
-   :output-to "out/unit_tests.js"}
+   :ns-regexp "server-tests.*"
+   :output-to "out/server_tests.js"}
 
   :browser-tests
   {:target :browser-test
+   :ns-regexp "browser-tests.*"
    :test-dir "out/browser_tests"}}}

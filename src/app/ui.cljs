@@ -24,7 +24,7 @@
   (fn [_db [_ initial-db-state]]
     (merge {:current-route nil
             :router nil}
-             initial-db-state)))
+           initial-db-state)))
 
 (defonce root-container
   (rdc/create-root (js/document.getElementById "app")))
@@ -48,7 +48,6 @@
   []
   (let [router (routing/make-router routes)]
     (log/info :ui/start "Starting UI module")
-    (rf/clear-subscription-cache!)
     (rf/dispatch-sync [::initialize-db {:router router}])
     (routing/start router)
     (rdc/render root-container [layout/show])
@@ -56,4 +55,5 @@
 
 (defn stop
   []
+  ; (rf/clear-subscription-cache!)
   (log/info :ui/stop "Stopping UI module"))
