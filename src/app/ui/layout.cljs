@@ -23,7 +23,8 @@
   (let [[router current-route] @(rf/subscribe [:app.ui.routing/route-info])
         route-names (r/route-names router)
         routes (map #(r/match-by-name router %) route-names)
-        menu-items (menu-item-links routes current-route)]
+        menu-items (menu-item-links routes current-route)
+        routed-view (-> current-route :data :view)]
     [:section.section
      [:div.container
       [:div.columns
@@ -32,4 +33,4 @@
          [:p.menu-label "Actions"]
          (into [:ul.menu-list] menu-items)]]
        [:div.column.is-9
-        [(-> current-route :data :view)]]]]]))
+        [routed-view]]]]]))

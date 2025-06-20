@@ -3,8 +3,7 @@
     [components.button :as button]
     [re-frame.core :as rf]
     [app.ui.pages.lnurl-login.events :as lnurl-events]
-    [app.ui.pages.lnurl-login.subscriptions :as lnurl-subs]
-    ))
+    [app.ui.pages.lnurl-login.subscriptions :as lnurl-subs]))
 
 
 (defn show

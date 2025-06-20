@@ -2,8 +2,7 @@
   (:require
     [re-frame.core :as rf]
     [lambdaisland.uri :as li-uri]
-    ["qrcode" :as QRCode]
-    ))
+    ["qrcode" :as QRCode]))
 
 (rf/reg-event-db
   ::new-lnurl-data
@@ -12,7 +11,7 @@
 
 (rf/reg-event-fx
   :poll-http-endpoint
-  (fn [cofx [_ {:keys [url tries-done max-tries time-between-tries on-success on-failure stop-criteria]
+  (fn [_cofx [_ {:keys [url tries-done max-tries time-between-tries on-success on-failure stop-criteria]
                 :as poll-params}]]
     (let [poll-id (random-uuid)
           tries-done (or tries-done 0)
@@ -28,11 +27,9 @@
                        :on-success [::poll-result-success updated-poll-params]
                        :on-failure [::poll-result-failure updated-poll-params]}]]}))))
 
-(def poll-result (atom nil))
 (rf/reg-event-fx
   ::poll-result-success
   (fn [_ [_ poll-params raw-result]]
-    (reset! poll-result raw-result)
     (let [result (js->clj (.parse js/JSON (get-in raw-result [:body])) :keywordize-keys true)
           stop-criteria (:stop-criteria poll-params)]
       (if (stop-criteria result)

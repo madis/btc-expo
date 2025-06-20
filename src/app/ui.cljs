@@ -21,10 +21,8 @@
   :stop (stop))
 
 (rf/reg-event-db ::initialize-db
-  (fn [_db [_ initial-db-state]]
-    (merge {:current-route nil
-            :router nil}
-           initial-db-state)))
+  (fn [db [_ initial-db-state]]
+    (merge db initial-db-state)))
 
 (defonce root-container
   (rdc/create-root (js/document.getElementById "app")))
@@ -48,6 +46,7 @@
   []
   (let [router (routing/make-router routes)]
     (log/info :ui/start "Starting UI module")
+    (rf/clear-subscription-cache!)
     (rf/dispatch-sync [::initialize-db {:router router}])
     (routing/start router)
     (rdc/render root-container [layout/show])
