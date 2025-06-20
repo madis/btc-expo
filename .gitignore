@@ -26,3 +26,4 @@ pom.xml.asc
 Session.vim
 out
 .env
+sb/stories/assets

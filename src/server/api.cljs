@@ -1,58 +1,43 @@
 (ns server.api
   (:require
     ["lnurl" :as lnurl]
-    ["node:crypto" :as crypto]
-    [lambdaisland.uri :as li-uri]))
+    [server.login-helpers :as login-helpers]
+    [server.config :refer [config storage]]
+    [server.storage :refer [get-from-store add-to-store! in-store?]]
+    [server.storage.atom-storage]))
 
-(def config
-  {:base-url "https://apps.mad.is/api/login"})
-
-(defn- signature-valid?
-  [sig k1 key]
-  (lnurl/verifyAuthorizationSignature sig k1 key))
-
-(defn- generate-random-hex-id
-  []
-  (.toString (crypto/randomBytes 32) "hex"))
-
-(defn- generate-lnurl
-  [query-params]
-  (let [base-url (config :base-url)]
-    (-> base-url
-        (li-uri/parse ,,,)
-        (li-uri/assoc-query ,,, query-params)
-        (li-uri/uri-str ,,,))))
-
-(defn- handle-login
-  [sig k1 key]
-  (if (signature-valid? sig k1 key)
-    {:status "OK"}
-    {:status "ERROR" :reason "Login unsuccessful due to failure in verifying signature"}))
 
 (defn post-data
   [{:keys [json query]}]
-  {:json {:original-json json :original-query query :status 200}})
+  {:json {:original-json json :original-query query} :status 200})
 
 (defn get-data
   [{:keys [query]}]
-  {:json {:nothing "Here" :original-query query} :status 200})
+  {:json {:original-query query} :status 200})
 
 (defn login-status
-  [_]
-  {:json {:status "OK"}})
+  [{:keys [query]}]
+  (let [session-id (:sid query)
+        session (get-from-store @storage session-id)]
+    (if (= (:status session) "OK")
+      {:json {:status "OK"}}
+      {:json {:status "ERROR" :reason "No session found"}})))
 
 (defn lnurl
   [_]
-  (let [hex-id (generate-random-hex-id)
+  (let [hex-id (login-helpers/generate-random-hex-id)
         url-params {:k1 hex-id :tag "login"}
-        url (generate-lnurl url-params)]
+        url (login-helpers/generate-lnurl (@config :base-url) url-params)]
+    (add-to-store! @storage hex-id nil)
     {:json {:lnurl (lnurl/encode url) :url url}}))
 
 (defn login
   [{:keys [query]}]
-  (let [{:keys [sig k1 key]} query]
-    {:json (handle-login sig k1 key)}))
+  (let [{:keys [sig k1 key]} query
+        login-result (login-helpers/handle-login sig k1 key)]
+    (add-to-store! @storage k1 login-result)
+    {:json login-result}))
 
 (defn get-config
   [_]
-  {:json {:api-base-url "http://example.com"}})
+  {:json (select-keys @config [:base-url])})
