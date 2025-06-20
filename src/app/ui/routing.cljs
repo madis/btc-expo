@@ -34,18 +34,6 @@
   (fn [db _]
     (:current-route db)))
 
-(re-frame/reg-sub
-  ::router
-  (fn [db _]
-    (:router db)))
-
-(re-frame/reg-sub
-  ::route-info
-  :<- [::router]
-  :<- [::current-route]
-  (fn [[router current-route]]
-    [router current-route]))
-
 (defn on-navigate [new-match]
   (when new-match
     (re-frame/dispatch [::navigated new-match])))

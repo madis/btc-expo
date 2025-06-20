@@ -17,10 +17,10 @@
   routes))
 
 (defn show
-  []
+  [router]
   ; Example design: https://bulmatemplates.github.io/bulma-templates/templates/cheatsheet.html
   ; Another example: https://bulmatemplates.github.io/bulma-templates/templates/admin.html
-  (let [[router current-route] @(rf/subscribe [:app.ui.routing/route-info])
+  (let [current-route @(rf/subscribe [:app.ui.routing/current-route])
         route-names (r/route-names router)
         routes (map #(r/match-by-name router %) route-names)
         menu-items (menu-item-links routes current-route)

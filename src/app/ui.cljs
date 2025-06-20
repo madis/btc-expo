@@ -49,7 +49,7 @@
     (rf/clear-subscription-cache!)
     (rf/dispatch-sync [::initialize-db {:router router}])
     (routing/start router)
-    (rdc/render root-container [layout/show])
+    (rdc/render root-container [layout/show router])
     root-container))
 
 (defn stop

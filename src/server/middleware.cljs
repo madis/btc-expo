@@ -19,9 +19,7 @@
   [handler]
   (fn [req res next]
     (let [query (oget req :query)
-          ; _ (js/console.log ">>> wrap-clojure-handler QUERY:" query)
           clj-query (js-obj->clj-map query)
-          ; _ (js/console.log ">>> wrap-clojure-handler CLJ-QUERY:" clj-query)
           json-body (js->clj (oget req :body) :keywordize-keys true)
           {:keys [json status]} (handler {:query clj-query :json json-body})]
       (when json (.json res (clj->js json)))
