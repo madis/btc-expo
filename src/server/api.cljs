@@ -27,7 +27,8 @@
   [_]
   (let [hex-id (login-helpers/generate-random-hex-id)
         url-params {:k1 hex-id :tag "login"}
-        url (login-helpers/generate-lnurl (@config :base-url) url-params)]
+        api-url (str (@config :base-url) "/api/login")
+        url (login-helpers/generate-lnurl api-url url-params)]
     (add-to-store! @storage hex-id nil)
     {:json {:lnurl (lnurl/encode url) :url url}}))
 
@@ -41,3 +42,12 @@
 (defn get-config
   [_]
   {:json (select-keys @config [:base-url])})
+
+(def ul (atom nil))
+
+(defn profile
+  [{:keys [json uploads]}]
+  (reset! ul uploads)
+  (let [file-name (-> uploads first :filename)
+        upload-url (str (@config :uploads-root-url) "/" file-name)]
+    {:json {:upload-url upload-url}}))

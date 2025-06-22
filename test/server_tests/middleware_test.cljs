@@ -13,8 +13,9 @@
           res (.createResponse http-mocks)
           next-called? (atom false)
           handler (fn [input]
-                    {:status 201 :json {:status "OK"
-                                        :counter (+ 1 (-> input :query :query-counter))}})
+                    {:status 201
+                     :json {:status "OK"
+                            :counter (+ 1 (-> input :query :query-counter))}})
           wrapped-handler (middleware/wrap-clojure-handler handler)]
       (wrapped-handler req res #(reset! next-called? true))
       (is (= 201 (.-statusCode res)))
@@ -22,10 +23,11 @@
       (is (= @next-called? true))))
 
   (testing "wrap-clojure-handler POST"
-    (let [req (.createRequest http-mocks #js {:method "POST"
-                                              :url "/endpoint"
-                                              :headers {"Content-Type" "application/json"}
-                                              :body {:body-counter 1}})
+    (let [json-body (.stringify js/JSON #js {:body-counter 1})
+          req (.createRequest http-mocks (clj->js {:method "POST"
+                                                   :url "/endpoint"
+                                                   :headers {"Content-Type" "application/json"}
+                                                   :body json-body}))
           res (.createResponse http-mocks)
           next-called? (atom false)
           handler (fn [input]

@@ -1,4 +1,4 @@
-css: npx esbuild --bundle sb/main.css --outfile=public/css/main.css --watch
+css: npx esbuild sb/main.css --bundle --outfile=public/css/main.css --loader:.woff=file --loader:.woff2=file --loader:.ttf=file --watch
 cljs_server: npx shadow-cljs server
 # storybook_js: cd sb && npm run storybook
 storybook_cljs: sleep 10 && npx shadow-cljs watch storybook

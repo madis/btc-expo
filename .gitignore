@@ -27,3 +27,4 @@ Session.vim
 out
 .env
 sb/stories/assets
+public/uploads

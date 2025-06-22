@@ -2,6 +2,8 @@
   (:require ["express" :as express]
             ["path" :as path]
             ["morgan" :as morgan]
+            ["multer" :as multer]
+            [oops.core :refer [oget]]
             [server.middleware :as middleware]
             [server.api :as api]))
 
@@ -28,6 +30,23 @@
 (.get app "/api/login-status" (middleware/wrap-clojure-handler api/login-status))
 (.get app "/api/config" (middleware/wrap-clojure-handler api/get-config))
 
+
+(defn create-upload-middleware
+  [form-field upload-folder]
+  (let [config {:destination (fn [_req _file callback] (callback nil upload-folder))
+               :filename
+               (fn [_req file callback]
+                 (let [unique-suffix (str form-field "-" (js/Date.now))
+                       orig-filename (oget file "originalname")
+                       new-filename (str unique-suffix "-" orig-filename)]
+                   (callback nil new-filename)))}
+        storage (.diskStorage multer (clj->js config))
+        upload (multer (clj->js {:storage storage}))]
+    (.single upload form-field)))
+
+(.post app "/api/profile"
+       (create-upload-middleware "avatar-file" "public/uploads")
+       (middleware/wrap-clojure-handler api/profile))
 
 ;; Start the server
 (defn main []

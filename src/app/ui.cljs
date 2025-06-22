@@ -8,6 +8,7 @@
     [app.ui.pages.clightning-operations :as pages.clightning-operations]
     [app.ui.pages.home :as pages.home]
     [app.ui.pages.lnurl-login :as pages.lnurl-login]
+    [app.ui.pages.profile :as pages.profile]
     [app.ui.pages.configuration :as pages.configuration]
     [app.ui.routing :as routing]
     [app.ui.layout :as layout]))
@@ -38,6 +39,9 @@
     ["/lnurl-login" {:name ::lnurl-login
                      :link-text "LNURL Login"
                      :view pages.lnurl-login/show}]
+    ["/profile" {:name :login
+                 :link-text "Profile"
+                 :view pages.profile/show}]
     ["/configuration" {:name ::configuration
                        :link-text "Configuration"
                        :view pages.configuration/show}]]])
