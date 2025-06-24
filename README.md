@@ -1,34 +1,20 @@
-# Examples using ClojureScript (shadow-cljs) & Storybook.js together
+# Bitcoin Expo application
 
-Files & meanings
-```
-├── deps.edn
-├── package.json
-├── package-lock.json
-├── Procfile
-├── public
-│   ├── css
-│   ├── index.html         // Base HTML (where the Reagent app will be rendered)
-│   └── js                 // Output of the demo app build
-├── README.md
-├── sb
-│   ├── main.css           // Entry to CSS files (processed by esbuild)
-│   ├── package.json
-│   ├── package-lock.json
-│   └── stories            // Configurtion to show Storybook components in Storybook
-├── shadow-cljs.edn
-└── src
-    ├── app                // Demo application
-    └── sb                 // Implementation of the Storybook components
-```
+An browser application & HTTP API server to demonstrate some useful things that can be done with Bitcoin.
+
+[![Watch the video](https://raw.githubusercontent.com/madis/btc-expo/master/docs/btc-expo-short-demo.png)](https://raw.githubusercontent.com/madis/btc-expo/master/docs/btc-expo-short-demo.webm)
+
+Technologies & tools used:
+  - [ClojureScript](https://clojurescript.org/)
+  - [shadow-cljs](https://shadow-cljs.github.io/docs/UsersGuide.html)
+  - [re-frame](https://day8.github.io/re-frame/re-frame/) (for UI application architecture and internal communication)
+  - PostgreSQL (as storage back-end)
+  - React (via [Reagent](https://reagent-project.github.io/))
+
+## Development
 
 Start these 2 processes in separate terminal windows:
 1. `overmind start`
   - will run the processes defined in the `Procfile` using [overmind](https://github.com/DarthSim/overmind)
-2. `npm run storybook`
-
-Then you can see the storybook at http://localhost:6006/ and the app at http://localhost:3000/
-
-## Thanks
-
-This is based on the work by Thomas Heller in https://github.com/thheller/shadow-cljs-storybook-reagent
+2. `node out/server.js`
+  - starts the API server application
