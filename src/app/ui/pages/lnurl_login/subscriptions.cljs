@@ -3,9 +3,14 @@
     [re-frame.core :as rf]))
 
 (rf/reg-sub
+  ::login-lnurl-qr-data
+  (fn [db _]
+    (get-in db [:operations :lnurl :qr-data])))
+
+(rf/reg-sub
   ::login-lnurl
   (fn [db _]
-    (get-in db [:operations :lnurl :data-url])))
+    (get-in db [:operations :lnurl :lnurl])))
 
 (rf/reg-sub
   ::login-url

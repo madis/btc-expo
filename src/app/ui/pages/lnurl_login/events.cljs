@@ -3,12 +3,13 @@
     [re-frame.core :as rf]
     [app.queries :as queries]
     [lambdaisland.uri :as li-uri]
-    ["qrcode" :as QRCode]))
+    ["qrcode" :as QRCode]
+    [clojure.string :as str]))
 
 (rf/reg-event-db
-  ::new-lnurl-data
+  ::new-lnurl-qr-data
   (fn [db [_ data-url]]
-    (assoc-in db [:operations :lnurl :data-url] data-url)))
+    (assoc-in db [:operations :lnurl :qr-data] data-url)))
 
 (rf/reg-event-fx
   :poll-http-endpoint
@@ -60,13 +61,13 @@
   (fn [{:keys [db]} [_ result]]
     (let [json-body (get-in result [:body])
           parsed-body (js->clj (.parse js/JSON json-body) :keywordize-keys true)
-          lnurl-from-response (str "" (:lnurl parsed-body))
+          lnurl-from-response (str/upper-case (:lnurl parsed-body))
           random-hex-id (-> (:url parsed-body)
                             (li-uri/parse ,,,)
                             (li-uri/query-map ,,,)
                             :k1)
           api-endpoint (queries/api-url db "/api/login-status")]
-      (.then (.toDataURL QRCode lnurl-from-response) #(rf/dispatch [::new-lnurl-data %]))
+      (.then (.toDataURL QRCode lnurl-from-response) #(rf/dispatch [::new-lnurl-qr-data %]))
       {:fx [[:dispatch
              [:poll-http-endpoint
               {:url (str api-endpoint "?sid=" random-hex-id)
@@ -79,7 +80,7 @@
                :on-failure ::login-failure}]]]
        :db
        (-> db
-           (assoc-in ,,, [:operations :lnurl :api-response] result)
+           (assoc-in ,,, [:operations :lnurl :lnurl] lnurl-from-response)
            (assoc-in ,,, [:operations :lnurl :random-hex-id] random-hex-id)
            (assoc-in ,,, [:operations :lnurl :url] (get parsed-body :url)))})))
 
