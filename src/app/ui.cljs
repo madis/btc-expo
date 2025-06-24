@@ -11,7 +11,8 @@
     [app.ui.pages.profile :as pages.profile]
     [app.ui.pages.configuration :as pages.configuration]
     [app.ui.routing :as routing]
-    [app.ui.layout :as layout]))
+    [app.ui.layout :as layout]
+    [app.ui.notification :as notification]))
 
 
 (declare start)
@@ -57,7 +58,9 @@
     (rf/clear-subscription-cache!)
     (rf/dispatch-sync [::initialize-db {:router router :config config}])
     (routing/start router)
-    (rdc/render root-container [layout/show router])
+    (rdc/render root-container [:<>
+                                [layout/show router]
+                                [notification/notification-container]])
     root-container))
 
 (defn stop

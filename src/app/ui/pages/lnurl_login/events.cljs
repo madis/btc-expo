@@ -45,11 +45,12 @@
     (js/console.log "::poll-result-failure" poll-params)))
 
 
-(rf/reg-event-db
+(rf/reg-event-fx
   ::login-success
-  (fn [db [_ session]]
+  (fn [{:keys [db]} [_ session]]
     (js/console.log "::login-success" session)
-    (assoc-in db [:login :status] true)))
+    {:fx [[:dispatch [:notification/show "Logged in successfully!"]]]
+     :db (assoc-in db [:login :status] true)}))
 
 (rf/reg-event-db
   ::login-failure
