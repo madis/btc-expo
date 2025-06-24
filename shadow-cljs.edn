@@ -12,7 +12,7 @@
   {:target :esm-files
    :output-dir "sb/stories/cljs"}
 
-  :ui
+  :app
   {:target :browser
    :output-dir "public/js"
    :asset-path "/js"
@@ -21,14 +21,19 @@
               :http-port 8008
               :before-load app.core/stop!
               :after-load app.core/start!
-              :preloads [devtools.preload]}}
+              :preloads [devtools.preload]}
+   :release {:output-dir "release/public/js"
+             :closure-defines {app.ui/api-url #shadow/env "PROD_API_URL"}}}
 
   :server
   {:target :node-script
    :output-to "out/server.js"
    :main server.core/main
    :devtools
-   {:watch-dir "public"}}
+   {:watch-dir "public"}
+   :release {:output-to "release/server.js"
+             :closure-defines {server.config/base-url "https://btc-expo.mad.is"
+                               server.config/uploads-root-url "https://btc-expo.mad.is/uploads"}}}
 
   :server-tests
   {:target :node-test

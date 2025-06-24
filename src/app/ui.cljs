@@ -46,12 +46,16 @@
                        :link-text "Configuration"
                        :view pages.configuration/show}]]])
 
+; Overwritten in compile time in shadow-cljs via closure-defines from API_URL env variable
+(goog-define api-url "http://localhost:3000")
+(def config {:api-url api-url})
+
 (defn start
   []
   (let [router (routing/make-router routes)]
     (log/info :ui/start "Starting UI module")
     (rf/clear-subscription-cache!)
-    (rf/dispatch-sync [::initialize-db {:router router}])
+    (rf/dispatch-sync [::initialize-db {:router router :config config}])
     (routing/start router)
     (rdc/render root-container [layout/show router])
     root-container))

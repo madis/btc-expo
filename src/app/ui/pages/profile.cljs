@@ -2,7 +2,9 @@
   (:require
     [re-frame.core :as rf]
     [reagent.core :as reagent]
-    [oops.core :refer [oget oset!]]))
+    [oops.core :refer [oget oset!]]
+    [app.ui.pages.profile.events]
+    [app.ui.pages.profile.subscriptions]))
 
 
 (defn file-upload-inner
@@ -31,8 +33,6 @@
   (let []
     [file-upload-inner props]))
 
-(def last-file (atom nil))
-
 (defn set-image-as-src
   [file el-id]
   (let [el (js/document.getElementById el-id)
@@ -40,57 +40,6 @@
     (oset! el "src" img-url)
     (oset! el "alt" (.-name file))
     (oset! el "title" (.-name file))))
-
-(defn set-image-as-background
-  [file el-id]
-  (let [el (js/document.getElementById el-id)
-        reader (new js/FileReader)]
-    (oset! reader "onloadend"
-           (fn []
-             (oset! el "style.backgroundImage" (str "url(" (oget reader "result") ")"))))
-    (when file (.readAsDataURL reader file))))
-
-(rf/reg-event-db
-  :profile/set-name
-  (fn [db [_ value]]
-    (assoc-in db [:profile :name] value)))
-
-(rf/reg-event-db
-  :profile/set-avatar
-  (fn [db [_ value]]
-    (assoc-in db [:profile :avatar] value)))
-
-(rf/reg-event-db
-  :profile/save-success
-  (fn [_ _]
-    (js/console.log ">>> :profile/save-success")))
-
-(rf/reg-event-db
-  :profile/save-failure
-  (fn [_ _]
-    (js/console.log ">>> :profile/save-failure")))
-
-(rf/reg-event-fx
-  :profile/save
-  (fn [{:keys [db]} _]
-    (let [profile {}
-          avatar (get-in db [:profile :avatar])
-          form-data (new js/FormData)]
-      (.append form-data "avatar-file" avatar)
-      (.append form-data "json" (.stringify js/JSON (clj->js {:some-text "Hello" :some-arrays [1 2 3]})))
-      {:fx [[:fetch {:method :post
-                     :url "http://localhost:3000/api/profile"
-                     :mode :cors
-                     :body form-data
-                     :response-content-type :json
-                     :credentials :omit
-                     :on-success [:profile/save-success]
-                     :on-failure [:profile/save-failure]}]]})))
-
-(rf/reg-sub
-  :profile/user-name
-  (fn [db _]
-    (get-in db [:profile :name])))
 
 (defn show
   []

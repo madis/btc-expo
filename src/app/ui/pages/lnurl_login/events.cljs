@@ -1,6 +1,7 @@
 (ns app.ui.pages.lnurl-login.events
   (:require
     [re-frame.core :as rf]
+    [app.queries :as queries]
     [lambdaisland.uri :as li-uri]
     ["qrcode" :as QRCode]))
 
@@ -63,11 +64,12 @@
           random-hex-id (-> (:url parsed-body)
                             (li-uri/parse ,,,)
                             (li-uri/query-map ,,,)
-                            :k1)]
+                            :k1)
+          api-endpoint (queries/api-url db "/api/login-status")]
       (.then (.toDataURL QRCode lnurl-from-response) #(rf/dispatch [::new-lnurl-data %]))
       {:fx [[:dispatch
              [:poll-http-endpoint
-              {:url (str "https://apps.mad.is/api/login-status?sid=" random-hex-id)
+              {:url (str api-endpoint "?sid=" random-hex-id)
                :max-tries 10
                :time-between-tries 2000
                :stop-criteria (fn [result]
@@ -88,9 +90,9 @@
 
 (rf/reg-event-fx
   ::request-new-lnurl
-  (fn [_ _]
+  (fn [{:keys [db]} _]
     {:fx [[:fetch {:method :get
-                   :url "https://apps.mad.is/api/lnurl" ; TODO: extract to configuration
+                   :url (queries/api-url db "/api/lnurl")
                    :mode :cors
                    :response-content-type :json
                    :credentials :omit

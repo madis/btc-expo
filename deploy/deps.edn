@@ -1,0 +1,8 @@
+{:paths ["src"]
+ :deps {migratus/migratus {:mvn/version "1.6.4"}
+        org.postgresql/postgresql {:mvn/version "42.7.7"}}
+ :aliases {:migrate {:extra-deps {com.github.paulbutcher/clj-migratus {:git/tag "v1.0.3"
+                                                                      :git/sha "46a3ac1"}}
+                    :jvm-opts["-Dmigratus.config.path=config.clj"]
+                    :main-opts ["-m" "clj-migratus"]}}
+ }
