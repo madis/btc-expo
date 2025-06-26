@@ -2,6 +2,7 @@
   (:require
     [server.js-helpers :refer [js-obj->clj-map]]
     [oops.core :refer [oget]]
+    ["multer" :as multer]
     [clojure.core.async :refer [take!]]
     [cljs.core.async.impl.channels :refer [ManyToManyChannel]]))
 
@@ -63,3 +64,16 @@
          (do
            (respond-with-results result)
            (next)))))))
+
+(defn create-upload-middleware
+  [form-field upload-folder]
+  (let [config {:destination (fn [_req _file callback] (callback nil upload-folder))
+               :filename
+               (fn [_req file callback]
+                 (let [unique-suffix (str form-field "-" (js/Date.now))
+                       orig-filename (oget file "originalname")
+                       new-filename (str unique-suffix "-" orig-filename)]
+                   (callback nil new-filename)))}
+        storage (.diskStorage multer (clj->js config))
+        upload (multer (clj->js {:storage storage}))]
+    (.single upload form-field)))

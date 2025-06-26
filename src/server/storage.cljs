@@ -3,4 +3,5 @@
 (defprotocol Storage
   (get-from-store [this key])
   (add-to-store! [this key value])
-  (in-store? [this key]))
+  (in-store? [this key])
+  (all-profiles [this]))

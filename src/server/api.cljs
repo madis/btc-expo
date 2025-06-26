@@ -2,9 +2,10 @@
   (:require
     ["lnurl" :as lnurl]
     [server.login-helpers :as login-helpers]
-    [server.config :refer [config storage]]
-    [server.storage :refer [get-from-store add-to-store! in-store?]]
-    [server.storage.atom-storage]
+    [server.config :refer [config]]
+    [server.storage :refer [get-from-store add-to-store! in-store? all-profiles]]
+    ; [server.storage.atom-storage :refer [storage]]
+    [server.storage.postgres :refer [storage]]
     [clojure.core.async :refer [go chan <! >! put! sliding-buffer]]))
 
 
@@ -62,3 +63,9 @@
   (let [file-name (-> uploads first :filename)
         upload-url (str (@config :uploads-root-url) "/" file-name)]
     {:json {:upload-url upload-url}}))
+
+(defn profiles
+  [{:keys [json]}]
+  (go
+    (let [profiles (<! (all-profiles @storage))]
+      {:json profiles})))
