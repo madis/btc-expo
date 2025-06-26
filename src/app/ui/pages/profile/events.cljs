@@ -13,12 +13,13 @@
   (fn [db [_ value]]
     (assoc-in db [:profile :avatar] value)))
 
-(rf/reg-event-db
+(rf/reg-event-fx
   :profile/save-success
-  (fn [db [_ result]]
+  (fn [{:keys [db]} [_ result]]
     (let [parsed-body (js->clj (.parse js/JSON (get result :body)) :keywordize-keys true)
           avatar-url (:upload-url parsed-body)]
-      (assoc-in db [:profile :avatar-url] avatar-url))))
+      {:fx [[:dispatch [:notification/show "Profile successfully saved"]]]
+       :db (assoc-in db [:profile :avatar-url] avatar-url)})))
 
 (rf/reg-event-db
   :profile/save-failure

@@ -4,16 +4,27 @@
     [server.login-helpers :as login-helpers]
     [server.config :refer [config storage]]
     [server.storage :refer [get-from-store add-to-store! in-store?]]
-    [server.storage.atom-storage]))
+    [server.storage.atom-storage]
+    [clojure.core.async :refer [go chan <! >! put! sliding-buffer]]))
 
 
 (defn post-data
   [{:keys [json query]}]
   {:json {:original-json json :original-query query} :status 200})
 
+(def info-channel (chan (sliding-buffer 3)))
+(put! info-channel "First info")
+
 (defn get-data
   [{:keys [query]}]
-  {:json {:original-query query} :status 200})
+  ; (new js/Promise
+  ;      (fn [resolve reject]
+  ;        (js/setTimeout #(resolve {:json {:original-query query} :status 200}) 5000)))
+  (go
+    (let [new-info (<! info-channel)]
+      (when (:info query) (>! info-channel (:info query)))
+
+      {:json {:new-info new-info}})))
 
 (defn login-status
   [{:keys [query]}]

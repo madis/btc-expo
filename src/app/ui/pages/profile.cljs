@@ -77,5 +77,4 @@
 
        [:button.button.is-primary {:on-click (fn [e]
                                                (.preventDefault e)
-                                               (js/console.log "Button clicked" @user-name)
                                                (rf/dispatch [:profile/save]))} "Save!"]])))

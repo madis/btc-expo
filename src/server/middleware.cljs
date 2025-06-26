@@ -1,7 +1,9 @@
 (ns server.middleware
   (:require
     [server.js-helpers :refer [js-obj->clj-map]]
-    [oops.core :refer [oget]]))
+    [oops.core :refer [oget]]
+    [clojure.core.async :refer [take!]]
+    [cljs.core.async.impl.channels :refer [ManyToManyChannel]]))
 
 (defn cors
   [_ res next]
@@ -45,7 +47,19 @@
           json-from-req (safe-parse-json raw-json-from-req)
           uploads (when uploaded-file {:uploads [(js->clj uploaded-file :keywordize-keys true)]})
           handler-params (merge {:query clj-query :json json-from-req} uploads)
-          {:keys [json status]} (handler handler-params)]
-      (when json (.json res (clj->js json)))
-      (.status res (or status 200))
-      (next))))
+          ; {:keys [json status]} (handler handler-params)
+          result (handler handler-params)
+          promise? (= (type result) js/Promise)
+          channel? (= (type result) ManyToManyChannel)
+          respond-with-results (fn [{:keys [json status]}]
+                                 (when json (.json res (clj->js json)))
+                                 (.status res (or status 200)))]
+      (if channel?
+        (take! result respond-with-results)
+        (if promise?
+         (-> result
+             (.then ,,, respond-with-results)
+             (.catch ,,, next))
+         (do
+           (respond-with-results result)
+           (next)))))))
