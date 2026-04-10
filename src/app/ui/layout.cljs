@@ -4,33 +4,26 @@
     [reitit.frontend.easy :as rfe]
     [reitit.core :as r]))
 
-(defn menu-item-links
+(defn navbar-items
   [routes current-route]
   (map (fn [route]
-    [:li.is-right
-     [:a {:class (if
-                   (= (-> route :data :name) (-> current-route :data :name))
-                   [:is-active]
-                   [])
-          :href (rfe/href (-> route :data :name))}
-      (-> route :data :link-text)]])
-  routes))
+         [:a.navbar-item
+          {:key (-> route :data :name)
+           :class (if (= (-> route :data :name) (-> current-route :data :name))
+                    [:is-selected]
+                    [])
+           :href (rfe/href (-> route :data :name))}
+          (-> route :data :link-text)])
+       routes))
 
 (defn show
   [router]
-  ; Example design: https://bulmatemplates.github.io/bulma-templates/templates/cheatsheet.html
-  ; Another example: https://bulmatemplates.github.io/bulma-templates/templates/admin.html
   (let [current-route @(rf/subscribe [:app.ui.routing/current-route])
         route-names (r/route-names router)
         routes (map #(r/match-by-name router %) route-names)
-        menu-items (menu-item-links routes current-route)
         routed-view (-> current-route :data :view)]
-    [:section.section
-     [:div.container
-      [:div.columns
-       [:div.column.is-3
-        [:aside.is-medium.menu
-         [:p.menu-label "Actions"]
-         (into [:ul.menu-list] menu-items)]]
-       [:div.column.is-9
-        [routed-view]]]]]))
+    [:div
+     [:nav.navbar {:role "navigation" :aria-label "main navigation"}
+      [:div.navbar-menu
+       [:div.navbar-start (navbar-items routes current-route)]]]
+     [:div.section [routed-view]]]))

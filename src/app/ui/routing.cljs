@@ -21,6 +21,8 @@
   (fn [_ [_ & route]]
     {:push-state route}))
 
+;; reitit controllers example:
+;;   https://gist.github.com/vharmain/a8bbfa5bc601feba0f421959228139a1
 (re-frame/reg-event-db ::navigated
   (fn [db [_ new-match]]
     (let [old-match   (:current-route db)

@@ -33,5 +33,5 @@
   (let [notification (rf/subscribe [:notification/content])]
     [:div.notification-container
      [:div {:class [:notification :is-success (when @notification :is-visible)]}
-      [:button.delete {:on-click #(rf/dispatch :notification/hide)}]
+      [:button.delete {:on-click #(rf/dispatch [:notification/hide])}]
       @notification]]))

@@ -31,3 +31,15 @@
   transform: translateY(0); /* Slide up to visible position */
   opacity: 1; /* Fully visible */
 }
+
+.hold-panel-sender {
+  background-color: #eef7eb;
+}
+
+.hold-panel-receiver {
+  background-color: #f7ebed;
+}
+
+.hold-panel-empty {
+  background-color: #dee0df;
+}
