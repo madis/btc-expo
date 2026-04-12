@@ -1,48 +1,59 @@
 (ns app.ui.pages.hodl-invoice.views
   (:require
+    [clojure.string :as str]
     [oops.core :refer [oget oset!]]))
 
+(defn validation-errors
+  [k validations]
+  (when-let [errors (get validations k)] [:p.help.is-danger (str/join ". " errors)]))
+
+(defn message
+  [content & [type]]
+  [:article.message {:class [type]}
+   [:div.message-body content]])
+
 (defn node-config
-  [{:keys [on-submit on-use-defaults set-url set-rune role]} {:keys [url rune result error]}]
-  [:div.field
+  [{:keys [on-submit on-use-defaults set-url set-rune]} {:keys [url rune status error validations]}]
+  [:div
    [:div.field
     [:label.label "Core Lightning REST API base URL"]
     [:div.control
      [:input.input
       {:type "text"
+       :class (when (:api-base-url @validations) [:is-danger])
        :value @url
        :placeholder "http://localhost:8184/v1"
-       :on-change set-url}]]]
+       :on-change set-url}]]
+    [validation-errors :api-base-url @validations]]
    [:div.field
     [:label.label "Rune"]
     [:div.control
      [:input.input
       {:type "text"
+       :class (when (:rune @validations) [:is-danger])
        :value @rune
        :placeholder "k8QQvNMUJMpC5u-fdTgpndC9hOWPgIcpN8I2t299KxU9MA=="
-       :on-change set-rune}]]]
-
-   (case (:status result)
+       :on-change set-rune}]]
+    [validation-errors :rune @validations]]
+   [:div.field
+    [:div.buttons
+     [:button.button {:on-click on-use-defaults} "Use defaults"]
+     [:button.button.is-primary {:on-click on-submit} "Check connection"]]]
+   (case @status
      :ok
-     [:div
-      [:div.field
-       [:span.tag.is-medium.is-primary "Connection OK"]]]
+     [message "Connection to node OK" :is-success]
 
      :in-progress
-     [:div.field
-      [:span.tag.is-medium.is-warning "Checking..."]]
+     [message "Checking connection" :is-info]
 
      :error
-     [:div
-      [:div.field
-       [:span.tag.is-medium.is-danger "Error"]]]
+     [message @error :is-danger]
 
-     [:div.buttons
-      [:button.button {:on-click on-use-defaults} "Use defaults"]
-      [:button.button.is-primary {:on-click on-submit} "Check connection"]])])
+     [message "Please fill the data or use defaults" :is-warning])
+   ])
 
 (defn invoice-form
-  [{:keys [amount description on-change on-submit]}]
+  [{:keys [amount description disabled? on-change on-submit]}]
   [:div
    [:div.field
     [:label.label "Amount"]
@@ -55,7 +66,7 @@
        :max 1000000}]]]
    [:div.field
     [:div.control
-     [:button.button {:on-click on-submit} "Generate invoice"]]]])
+     [:button.button.is-primary {:on-click on-submit :disabled disabled?} "Generate invoice"]]]])
 
 (defn- copy-to-clipboard [s]
   (let [promise (.writeText (oget js/navigator :clipboard) s)]
@@ -85,7 +96,7 @@
     [:code.language-json lnurl]]])
 
 (defn- invoice-card
-  [invoice actions & [el-key]]
+  [invoice disabled? actions & [el-key]]
   (let [gen-key (fn [sub-id] (str (or (name el-key) (subs (:bolt11 invoice) 0 10)) sub-id))]
     [:div.card {:key (gen-key "card")}
      [:div.card-content
@@ -104,15 +115,18 @@
       (for [action actions]
         [:button.button.is-primary.card-footer-item
          {:key (gen-key "card-footer")
-          :on-click (fn [_e] (((:on-click action) invoice)))}
+          :disabled disabled?
+          :on-click (fn [_e] ((:on-click action) invoice))}
          (:title action)])]]))
 
-(defn pick-invoice
-  [{:keys [invoices actions]}]
-  (doall
-    (for [invoice invoices]
-     (invoice-card invoice actions :pick-invoice))))
+(defn pay-invoice
+  [{:keys [invoices disabled? error actions]}]
+  [:div
+   (when error [message error :is-danger])
+   (doall
+     (for [invoice invoices]
+       (invoice-card invoice disabled? actions :pick-invoice)))])
 
 (defn settle-invoice
-  [{:keys [invoice actions]}]
-  (invoice-card invoice actions :settle-invoice))
+  [{:keys [invoice disabled? actions]}]
+  (invoice-card invoice disabled? actions :settle-invoice))

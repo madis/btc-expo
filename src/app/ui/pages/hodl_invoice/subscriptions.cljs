@@ -15,14 +15,15 @@
     (step-data db role-step :rune)))
 
 (rf/reg-sub
-  :hodl-invoice/connection-status
+  :hodl-invoice/step-status
   (fn [db [_ role-step]]
-    (step-data db role-step :connection-status)))
+    (step-data db role-step :status)))
 
 (rf/reg-sub
-  :hodl-invoice/node-info
+  :hodl-invoice/step-error
   (fn [db [_ role-step]]
-    (step-data db role-step [:result :node-info])))
+    (step-data db role-step :error)))
+
 
 (rf/reg-sub
   :hodl-invoice/invoice
@@ -70,6 +71,11 @@
           steps-or-first (if (seq steps-included) steps-included [(first steps)])]
       (map (fn [role-step]
              [role-step (get-in steps-progress [role-step])]) steps-or-first))))
+
+(rf/reg-sub
+  :hodl-invoice/step-validations
+  (fn [db [_ role-step]]
+    (step-data db role-step :validations)))
 
 (comment
   (subvec [] 0 0))

@@ -1,12 +1,13 @@
 (ns app.ui.pages.hodl-invoice.events
   (:require
-    [re-frame.core :as rf]
-    ["qrcode" :as QRCode]
-    [goog.crypt :as crypt]
-    [goog.crypt.Sha256]
-    [app.ui.pages.hodl-invoice.helpers :refer [step-key step-data]]
-    [app.ui.pages.hodl-invoice.config :as hodl-invoice.config]
-    [lambdaisland.glogi :as log]))
+   ["qrcode" :as QRCode]
+   [app.ui.pages.hodl-invoice.config :as hodl-invoice.config]
+   [app.ui.pages.hodl-invoice.db :as hi-db]
+   [app.ui.pages.hodl-invoice.helpers :refer [step-data step-key]]
+   [goog.crypt :as crypt]
+   [goog.crypt.Sha256]
+   [lambdaisland.glogi :as log]
+   [re-frame.core :as rf]))
 
 (defn node-api-request-params
   [{:keys [api-base-url rune]}
@@ -46,26 +47,6 @@
     {:db (assoc-in db (step-key role-step :rune) (not-empty value))
      :store (assoc-in store (step-key role-step :rune) (not-empty value))}))
 
-(rf/reg-event-db
-  :hodl-invoice/payable-invoices-result
-  (fn [db [_ result]]
-    (assoc-in db [:hodl-invoice :payable-invoices] [(:body result)])))
-
-(rf/reg-event-db
-  :hodl-invoice/payable-invoices-error
-  (fn [_db [_ error]]
-    (js/console.error ">>> :hodl-invoice/payable-invoices-error" error)))
-
-(rf/reg-event-fx
-  :hodl-invoice/request-payable-invoices
-  (fn [{:keys [db]} _]
-    {:fx [(node-api-request-params
-            (get-in db [:hodl-invoice :receiver])
-            "decode"
-            [(get-in db [:hodl-invoice :receiver :invoice :bolt11])]
-            {:on-success [:hodl-invoice/payable-invoices-result]
-             :on-failure [:hodl-invoice/payable-invoices-error]})]}))
-
 (rf/reg-event-fx
   :hodl-invoice/set-connection-status-ok
   (fn [{:keys [db] :as cofx} [_ role-step result]]
@@ -73,13 +54,18 @@
                      :version (get-in result [:body :version])}]
       {:db (-> db
                (assoc-in ,,, (step-key role-step :status) :ok)
+               (assoc-in ,,, (step-key role-step :error) nil)
                (update-in ,,, (step-key role-step :result) merge node-info))})))
 
 (rf/reg-event-db
   :hodl-invoice/set-connection-status-error
-  (fn [db [_ role-step _result]]
+  (fn [db [_ role-step error]]
+    (log/error :hodl-invoice/set-connection-status-error error)
     (-> db
         (assoc-in ,,, (step-key role-step :status) :error)
+        (assoc-in ,,, (step-key role-step :error) (or
+                                                    (get-in error [:body :message])
+                                                    (get-in error [:problem-message])))
         (assoc-in ,,, (step-key role-step :result) nil))))
 
 (rf/reg-event-db
@@ -90,13 +76,16 @@
 (rf/reg-event-fx
   :hodl-invoice/check-connection
   (fn [{:keys [db]} [_ role-step]]
-    {:db (assoc-in db (step-key role-step :status) :in-progress)
-     :fx [(node-api-request-params
-          (select-keys (step-data db role-step) [:api-base-url :rune])
-          "getinfo"
-          []
-          {:on-success [:hodl-invoice/set-connection-status-ok role-step]
-           :on-failure [:hodl-invoice/set-connection-status-error role-step]})]}))
+    (let [validations (hi-db/validate hi-db/ConnectionCheck (step-data db role-step))]
+      (if (nil? validations)
+        {:db (assoc-in db (step-key role-step :status) :in-progress)
+         :fx [(node-api-request-params
+                (select-keys (step-data db role-step) [:api-base-url :rune])
+                "getinfo"
+                []
+                {:on-success [:hodl-invoice/set-connection-status-ok role-step]
+                 :on-failure [:hodl-invoice/set-connection-status-error role-step]})]}
+        {:db (assoc-in db (step-key role-step :validations) validations)}))))
 
 (rf/reg-event-db
   :hodl-invoice/pay-invoice-ok
@@ -106,13 +95,10 @@
 
 (rf/reg-event-db
   :hodl-invoice/pay-invoice-error
-  (fn [db [_ result]]
-    (log/error :pay-invoice-error result)
-    (assoc-in db (step-key [:sender :pay-invoice]) {:status :error
-                                                    :error result})))
+  (fn [db [_ error]]
+    (log/error :pay-invoice-error error)
+    (assoc-in db (step-key [:sender :pay-invoice]) {:status :error :error (get-in error [:body :message])})))
 
-;; Continuation:
-;;   store the invstring along with payable invoice after decoding it
 (rf/reg-event-fx
   :hodl-invoice/pay-invoice
   (fn [{:keys [db]} [_ bolt11]]
@@ -147,14 +133,12 @@
   :hodl-invoice/settle-invoice-error
   (fn [db [_ result]]
     (log/error :settle-invoice-error result)
-    (assoc-in db (step-key [:receiver :settle-invoice]) {:status :error
-                                                    :error result})))
+    (assoc-in db (step-key [:receiver :settle-invoice]) {:status :error :error result})))
+
 (rf/reg-event-db
   :hodl-invoice/invoice-qr-ready
   (fn [db [_ qr-data]]
-    (-> db
-        (assoc-in ,,, (step-key [:receiver :show-invoice-info]) {:qr-code qr-data
-                                                                 :status :ok}))))
+    (assoc-in db (step-key [:receiver :show-invoice-info]) {:qr-code qr-data :status :ok})))
 
 (rf/reg-event-fx
   :hodl-invoice/generate-invoice-ok
