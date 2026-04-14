@@ -53,17 +53,25 @@
    ])
 
 (defn invoice-form
-  [{:keys [amount description disabled? on-change on-submit]}]
+  [{:keys [amount description disabled? on-change-amount on-change-description on-submit]}]
   [:div
    [:div.field
     [:label.label "Amount"]
     [:div.control
      [:input.input
       {:type "number"
-       :on-change on-change
+       :on-change on-change-amount
        :value @amount
        :min 1000
        :max 1000000}]]]
+   [:div.field
+    [:label.label "Description"]
+    [:div.control
+     [:input.input
+      {:type "text"
+       :on-change on-change-description
+       :value @description
+       :max-length 120}]]]
    [:div.field
     [:div.control
      [:button.button.is-primary {:on-click on-submit :disabled disabled?} "Generate invoice"]]]])
@@ -97,7 +105,8 @@
 
 (defn- invoice-card
   [invoice disabled? actions & [el-key]]
-  (let [gen-key (fn [sub-id] (str (or (name el-key) (subs (:bolt11 invoice) 0 10)) sub-id))]
+  (let [gen-key (fn [sub-id & more] (str (or (name el-key) (subs (:bolt11 invoice) 0 10)) sub-id
+                                         (unsigned-bit-shift-right (hash more) 0)))]
     [:div.card {:key (gen-key "card")}
      [:div.card-content
       [:div.content
@@ -113,9 +122,10 @@
        [:p (:expiry invoice)]]]
      [:div.card-footer
       (for [action actions]
-        [:button.button.is-primary.card-footer-item
-         {:key (gen-key "card-footer")
+        [:button.button.card-footer-item
+         {:key (gen-key "card-footer" (:title action))
           :disabled disabled?
+          :class (or (:class action) "is-primary")
           :on-click (fn [_e] ((:on-click action) invoice))}
          (:title action)])]]))
 

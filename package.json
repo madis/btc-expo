@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "express": "^5.1.0",
+    "light-bolt11-decoder": "^3.2.0",
     "lnurl": "^0.27.0",
     "morgan": "^1.10.0",
     "multer": "^2.0.1",

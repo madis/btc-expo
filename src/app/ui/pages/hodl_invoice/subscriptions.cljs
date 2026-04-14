@@ -36,7 +36,7 @@
   :hodl-invoice/payable-invoices
   (fn [db]
     (when (get-in db (step-key [:receiver :show-invoice-info] :qr-code))
-      [{:amount (step-data db [:receiver :generate-invoice] :new-invoice-amount)
+      [{:amount (step-data db [:receiver :generate-invoice] :amount)
         :currency "msats"
         :bolt11 (step-data db [:receiver :generate-invoice] :result :bolt11)}])))
 
@@ -44,15 +44,21 @@
   :hodl-invoice/invoice-to-settle
   (fn [db]
     (when (get-in db (step-key [:receiver :show-invoice-info] :qr-code))
-      {:amount (step-data db [:receiver :generate-invoice] :new-invoice-amount)
+      {:amount (step-data db [:receiver :generate-invoice] :amount)
        :preimage (step-data db [:receiver :generate-invoice] :result :preimage)
+       :payment-hash (step-data db [:receiver :generate-invoice] :result :payment-hash)
        :currency "msats"
        :bolt11 (step-data db [:receiver :generate-invoice] :result :bolt11)})))
 
 (rf/reg-sub
   :hodl-invoice/new-invoice-amount
   (fn [db _]
-    (step-data db [:receiver :generate-invoice] :new-invoice-amount)))
+    (step-data db [:receiver :generate-invoice] :amount)))
+
+(rf/reg-sub
+  :hodl-invoice/new-invoice-description
+  (fn [db _]
+    (step-data db [:receiver :generate-invoice] :description)))
 
 (rf/reg-sub
   :hodl-invoice/steps

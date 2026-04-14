@@ -32,12 +32,15 @@
 
 (defmethod step-view [:receiver :generate-invoice] [role-step]
   (let [amount (rf/subscribe [:hodl-invoice/new-invoice-amount])
+        description (rf/subscribe [:hodl-invoice/new-invoice-description])
         status (rf/subscribe [:hodl-invoice/step-status role-step])]
     [views/invoice-form
      {:amount amount
-      :description "Hello"
-      :on-change #(rf/dispatch [:hodl-invoice/set-new-invoice-amount
-                                (js/parseInt (-> % .-target .-value))])
+      :description description
+      :on-change-amount #(rf/dispatch [:hodl-invoice/set-new-invoice-amount
+                                       (js/parseInt (-> % .-target .-value))])
+      :on-change-description #(rf/dispatch [:hodl-invoice/set-new-invoice-description
+                                            (-> % .-target .-value) %])
       :disabled? (= @status :ok)
       :on-submit #(rf/dispatch [:hodl-invoice/generate-invoice])}]))
 
@@ -58,10 +61,12 @@
 (defmethod step-view [:receiver :settle-invoice] [role-step]
   (let [invoice @(rf/subscribe [:hodl-invoice/invoice-to-settle])
         status (rf/subscribe [:hodl-invoice/step-status role-step])
-        on-settle (fn [invoice] (rf/dispatch [:hodl-invoice/settle-invoice (:preimage invoice)]))]
+        on-settle (fn [invoice] (println "SETTLE") (rf/dispatch [:hodl-invoice/settle-invoice (:preimage invoice)]))
+        on-cancel (fn [invoice] (println "CANCEL") (rf/dispatch [:hodl-invoice/cancel-invoice (:payment-hash invoice)]))]
     (views/settle-invoice {:invoice invoice
                            :disabled? (#{:ok :waiting-next} @status)
-                           :actions [{:title "Settle" :on-click on-settle}]})))
+                           :actions [{:title "Cancel" :on-click on-cancel :class "is-warning"}
+                                     {:title "Settle" :on-click on-settle}]})))
 
 (defmethod step-view [:sender :show-confirmation] [_ _]
   (let [invoice @(rf/subscribe [:hodl-invoice/invoice-to-settle])]
@@ -95,4 +100,5 @@
   (get-in @app-db [:hodl-invoice :steps-progress [:receiver :generate-invoice]])
   (get-in @app-db [:hodl-invoice :steps-progress [:sender :pay-invoice]])
   (get-in @app-db [:hodl-invoice :steps-progress [:receiver :settle-invoice]])
+  (hash "Hold")
   )

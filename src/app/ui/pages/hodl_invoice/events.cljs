@@ -7,7 +7,15 @@
    [goog.crypt :as crypt]
    [goog.crypt.Sha256]
    [lambdaisland.glogi :as log]
-   [re-frame.core :as rf]))
+   [re-frame.core :as rf]
+   ["light-bolt11-decoder" :as bolt11-decoder]))
+
+(defn payment-hash-from-bolt11 [bolt11-string]
+  (let [result (bolt11-decoder/decode bolt11-string)
+        ph-section (->> (.-sections result)
+                        (filter #(= (.-name %) "payment_hash"))
+                        first)]
+    (when ph-section (.-value ph-section))))
 
 (defn node-api-request-params
   [{:keys [api-base-url rune]}
@@ -70,8 +78,13 @@
 
 (rf/reg-event-db
   :hodl-invoice/set-new-invoice-amount
-  (fn [db [_  amount]]
-    (assoc-in db (step-key [:receiver :generate-invoice] :new-invoice-amount) amount)))
+  (fn [db [_ amount]]
+    (assoc-in db (step-key [:receiver :generate-invoice] :amount) amount)))
+
+(rf/reg-event-db
+  :hodl-invoice/set-new-invoice-description
+  (fn [db [_ description]]
+    (assoc-in db (step-key [:receiver :generate-invoice] :description) description)))
 
 (rf/reg-event-fx
   :hodl-invoice/check-connection
@@ -87,6 +100,18 @@
                  :on-failure [:hodl-invoice/set-connection-status-error role-step]})]}
         {:db (assoc-in db (step-key role-step :validations) validations)}))))
 
+(rf/reg-event-fx
+  :hodl-invoice/pay-invoice
+  (fn [{:keys [db]} [_ bolt11]]
+    (log/info :pay-invoice bolt11)
+    {:db (assoc-in db (step-key [:sender :pay-invoice] :status) :waiting-next)
+     :fx [(node-api-request-params
+            (select-keys (step-data db [:sender :check-connection]) [:api-base-url :rune])
+            "xpay"
+            {"invstring" bolt11}
+            {:on-success [:hodl-invoice/pay-invoice-ok]
+             :on-failure [:hodl-invoice/pay-invoice-error]})]}))
+
 (rf/reg-event-db
   :hodl-invoice/pay-invoice-ok
   (fn [db [_ result]]
@@ -100,18 +125,6 @@
     (assoc-in db (step-key [:sender :pay-invoice]) {:status :error :error (get-in error [:body :message])})))
 
 (rf/reg-event-fx
-  :hodl-invoice/pay-invoice
-  (fn [{:keys [db]} [_ bolt11]]
-    (log/info :pay-invoice bolt11)
-    {:db (assoc-in db (step-key [:sender :pay-invoice] :status) :waiting-next)
-     :fx [(node-api-request-params
-            (select-keys (step-data db [:sender :check-connection]) [:api-base-url :rune])
-            "xpay"
-            {"invstring" bolt11}
-            {:on-success [:hodl-invoice/pay-invoice-ok]
-             :on-failure [:hodl-invoice/pay-invoice-error]})]}))
-
-(rf/reg-event-fx
   :hodl-invoice/settle-invoice
   (fn [{:keys [db]} [_ preimage]]
     (log/info :settle-invoice preimage)
@@ -123,17 +136,69 @@
             {:on-success [:hodl-invoice/settle-invoice-ok]
              :on-failure [:hodl-invoice/settle-invoice-error]})]}))
 
-(rf/reg-event-db
+(rf/reg-event-fx
   :hodl-invoice/settle-invoice-ok
-  (fn [db [_ result]]
+  (fn [{:keys [db]} [_ result]]
     (log/info :settle-invoice-ok result)
-    (assoc-in db (step-key [:receiver :settle-invoice]) {:status :ok :result result})))
+    {:db (assoc-in db (step-key [:receiver :settle-invoice]) {:status :ok :result result})
+     :fx [#_[:dispatch [:hodl-invoice/invoice-details
+                      (step-data db [:receiver :generate-invoice] :result :bolt11)]]]}))
 
 (rf/reg-event-db
   :hodl-invoice/settle-invoice-error
   (fn [db [_ result]]
     (log/error :settle-invoice-error result)
     (assoc-in db (step-key [:receiver :settle-invoice]) {:status :error :error result})))
+
+(rf/reg-event-fx
+  :hodl-invoice/cancel-invoice
+  (fn [{:keys [db]} [_ payment-hash]]
+    (log/info :cancel-invoice payment-hash)
+    {:db (assoc-in db (step-key [:sender :settle-invoice] :status) :in-progress)
+     :fx [(node-api-request-params
+            (select-keys (step-data db [:receiver :check-connection]) [:api-base-url :rune])
+            "cancelholdinvoice"
+            [payment-hash]
+            {:on-success [:hodl-invoice/cancel-invoice-ok]
+             :on-failure [:hodl-invoice/cancel-invoice-error]})]}))
+
+(rf/reg-event-db
+  :hodl-invoice/cancel-invoice-ok
+  (fn [db [_ result]]
+    (log/info :cancel-invoice-ok result)
+    (assoc-in db (step-key [:receiver :settle-invoice]) {:status :ok :result result})))
+
+(rf/reg-event-db
+  :hodl-invoice/cancel-invoice-error
+  (fn [db [_ result]]
+    (log/error :cancel-invoice-error result)
+    (assoc-in db (step-key [:receiver :settle-invoice]) {:status :error :error result})))
+
+(rf/reg-event-fx
+  :hodl-invoice/invoice-details
+  (fn [{:keys [db]} [_ bolt11]]
+    (log/info :pay-invoice bolt11)
+    {:db (assoc-in db (step-key [:sender :pay-invoice] :status) :waiting-next)
+     :fx [(node-api-request-params
+            (select-keys (step-data db [:receiver :check-connection]) [:api-base-url :rune])
+            "listinvoices"
+            {"invstring" bolt11}
+            {:on-success [:hodl-invoice/invoice-details-ok]
+             :on-failure [:hodl-invoice/invoice-details-error]})]}))
+
+(rf/reg-event-db
+  :hodl-invoice/invoice-details-ok
+  (fn [db [evt result]]
+    (log/info evt result)
+    (assoc-in db (step-key [:sender :show-confirmation]) {:status :ok :result result})))
+
+(rf/reg-event-db
+  :hodl-invoice/invoice-details-error
+  (fn [db [evt error]]
+    (log/error evt error)
+    (assoc-in db
+              (step-key [:sender :show-confirmation])
+              {:status :error :error (get-in error [:body :message])})))
 
 (rf/reg-event-db
   :hodl-invoice/invoice-qr-ready
@@ -143,9 +208,10 @@
 (rf/reg-event-fx
   :hodl-invoice/generate-invoice-ok
   (fn [{:keys [db]} [_ preimage result]]
-    (let [invoice {:bolt11 (get-in result [:body :bolt11])
+    (let [bolt11 (get-in result [:body :bolt11])
+          invoice {:bolt11 bolt11
                    :preimage (:preimage preimage)
-                   :payment-hash (:payment-hash preimage)}]
+                   :payment-hash (payment-hash-from-bolt11 bolt11)}]
       (.then (.toDataURL QRCode (get-in result [:body :bolt11]))
              #(rf/dispatch [:hodl-invoice/invoice-qr-ready %]))
       {:db (-> db
@@ -177,7 +243,8 @@
 (rf/reg-event-fx
   :hodl-invoice/generate-invoice
   (fn [{:keys [db]} _event]
-    (let [amount (step-data db [:receiver :generate-invoice] :new-invoice-amount)
+    (let [amount (step-data db [:receiver :generate-invoice] :amount)
+          description (step-data db [:receiver :generate-invoice] :description)
           [preimage-hex payment-hash] (generate-preimage)]
       {:fx [(node-api-request-params
               (select-keys (step-data db [:receiver :check-connection]) [:api-base-url :rune])
